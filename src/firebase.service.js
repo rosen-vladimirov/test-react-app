@@ -17,35 +17,33 @@ class FirebaseService {
         initializeApp(this.firebaseConfig);
     }
 
-    async getQuestionForCurrentUser() {
-        const questions = await this.getQuestions();
-        const answeredQuestions = localStorage.getItem("answeredQuestions");
-        console.log(questions);
-        return questions[0];
+    getRandomlySelectedItem(list) {
+        const random = Math.floor(Math.random() * list.length);
+        return list[random];
     }
 
+    async getQuestionsForCurrentUser(numberOfQuestions) {
+        const questions = await this.getQuestions();
+        let keys = Object.keys(questions);
+        const finalQuestions = {};
+        for (let i = 0; i < numberOfQuestions; i++) {
+            const elementKey = this.getRandomlySelectedItem(keys);
+            finalQuestions[elementKey] = questions[elementKey];
+            keys.splice(keys.indexOf(elementKey), 1);
+        }
 
-    writeNewUser(name, email) {
+        return finalQuestions;
+    }
+
+    writeNewUser(userData) {
         const db = getDatabase();
-
-        // A post entry.
-        const postData = {
-            email,
-            name,
-            answeredQuestions: {
-                randomId: {
-                    questionId: "124",
-                    isCorrect: true
-                }
-            }
-        };
 
         // Get a key for a new Post.
         const newPostKey = push(child(ref(db), 'users')).key;
 
         // Write the new post's data simultaneously in the posts list and the user's post list.
         const updates = {};
-        updates['/users/' + newPostKey] = postData;
+        updates['/users/' + newPostKey] = userData;
 
         return update(ref(db), updates);
     }
@@ -56,7 +54,6 @@ class FirebaseService {
             .then((snapshot) => {
                 if (snapshot.exists()) {
                     return snapshot.toJSON();
-                    // root.render(<Survey model={survey} onValidateQuestion={surveyValidateQuestion} />)
                 } else {
                     throw new Error("Unable to get data from Firebase");
                 }
